@@ -8,6 +8,7 @@ set -euo pipefail
 #   bash run_libero.sh libero_goal 1 10   # suite, trials/task, max tasks
 #   TASK_IDS=8 NUM_TRIALS=50 bash run_libero.sh
 #   TASK_IDS=8 NUM_TRIALS=50 REPLAN_INTERVAL=4 bash run_libero.sh
+#   TASK_IDS=8 REPLAN_INTERVAL=6 ACTION_ENSEMBLE=0 bash run_libero.sh
 
 WORK_ROOT="${WORK_ROOT:-/group/ycyang/anupam}"
 STARVLA_DIR="${STARVLA_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
@@ -21,6 +22,7 @@ NUM_TRIALS="${2:-${NUM_TRIALS:-5}}"
 MAX_TASKS="${3:-${MAX_TASKS:-10}}"
 TASK_IDS="${TASK_IDS:-}"
 REPLAN_INTERVAL="${REPLAN_INTERVAL:-0}"
+ACTION_ENSEMBLE="${ACTION_ENSEMBLE:-0}"
 GPU_ID="${GPU_ID:-0}"
 HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-6694}"
@@ -31,7 +33,11 @@ else
   TASK_LABEL="${MAX_TASKS}tasks"
 fi
 if [[ "${REPLAN_INTERVAL}" -gt 0 ]]; then
-  REPLAN_LABEL="replan${REPLAN_INTERVAL}_ensemble"
+  if [[ "${ACTION_ENSEMBLE}" == "1" ]]; then
+    REPLAN_LABEL="replan${REPLAN_INTERVAL}_ensemble"
+  else
+    REPLAN_LABEL="replan${REPLAN_INTERVAL}_direct"
+  fi
 else
   REPLAN_LABEL="replan_full"
 fi
@@ -66,7 +72,7 @@ echo "  trials/task: ${NUM_TRIALS}"
 echo "  max tasks:   ${MAX_TASKS}"
 echo "  task IDs:    ${TASK_IDS:-all selected by max tasks}"
 echo "  replan:      ${REPLAN_INTERVAL} (0 means full action chunk)"
-echo "  ensemble:    overlapping action chunks"
+echo "  ensemble:    ${ACTION_ENSEMBLE} (0 = direct replacement, 1 = blend overlapping chunks)"
 echo "  server:      ${HOST}:${PORT}"
 echo "  videos:      ${VIDEO_OUT}"
 
@@ -80,6 +86,7 @@ CMD=(
   --args.num-trials-per-task "${NUM_TRIALS}" \
   --args.max-tasks "${MAX_TASKS}" \
   --args.replan-interval "${REPLAN_INTERVAL}" \
+  --args.action-ensemble "${ACTION_ENSEMBLE}" \
   --args.unnorm-key "${UNNORM_KEY}" \
   --args.pretrained-path "${CKPT}" \
   --args.video-out-path "${VIDEO_OUT}"

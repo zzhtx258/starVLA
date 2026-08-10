@@ -43,6 +43,7 @@ class Args:
     max_tasks: int = -1  # If > 0, limit the number of tasks evaluated (smoke / quick check). -1 = run all.
     task_ids: str = ""  # Optional comma-separated task IDs, e.g. "8" or "2,8". Overrides max_tasks.
     replan_interval: int = 0  # Actions executed before replanning. 0 = use the model's full action chunk.
+    action_ensemble: int = 0  # 0 = direct chunk replacement, 1 = blend overlapping predictions.
 
     #################################################################################################################
     # Utils
@@ -95,6 +96,7 @@ def eval_libero(args: Args) -> None:
         port=args.port,
         unnorm_key=args.unnorm_key,
         replan_interval=args.replan_interval if args.replan_interval > 0 else None,
+        action_ensemble=bool(args.action_ensemble),
     )
 
     # Select explicit task IDs when requested; otherwise evaluate the first
