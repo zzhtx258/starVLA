@@ -31,7 +31,7 @@ else
   TASK_LABEL="${MAX_TASKS}tasks"
 fi
 if [[ "${REPLAN_INTERVAL}" -gt 0 ]]; then
-  REPLAN_LABEL="replan${REPLAN_INTERVAL}"
+  REPLAN_LABEL="replan${REPLAN_INTERVAL}_ensemble"
 else
   REPLAN_LABEL="replan_full"
 fi
@@ -66,6 +66,7 @@ echo "  trials/task: ${NUM_TRIALS}"
 echo "  max tasks:   ${MAX_TASKS}"
 echo "  task IDs:    ${TASK_IDS:-all selected by max tasks}"
 echo "  replan:      ${REPLAN_INTERVAL} (0 means full action chunk)"
+echo "  ensemble:    overlapping action chunks"
 echo "  server:      ${HOST}:${PORT}"
 echo "  videos:      ${VIDEO_OUT}"
 
