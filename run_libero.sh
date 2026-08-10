@@ -12,10 +12,13 @@ set -euo pipefail
 
 WORK_ROOT="${WORK_ROOT:-/group/ycyang/anupam}"
 STARVLA_DIR="${STARVLA_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+STARVLA_RESULTS="${STARVLA_RESULTS:-${STARVLA_DIR}/playground/results}"
+MODELS_ROOT="${MODELS_ROOT:-${STARVLA_RESULTS}/models/hub}"
+RUNS_ROOT="${RUNS_ROOT:-${STARVLA_RESULTS}/runs}"
 LIBERO_HOME="${LIBERO_HOME:-${WORK_ROOT}/LIBERO}"
 LIBERO_ENV="${LIBERO_ENV:-${WORK_ROOT}/miniconda3/envs/libero}"
 LIBERO_PYTHON="${LIBERO_PYTHON:-${LIBERO_ENV}/bin/python}"
-CKPT="${CKPT:-${WORK_ROOT}/starvla-models/Qwen2.5-VL-GR00T-LIBERO-4in1/checkpoints/steps_30000_pytorch_model.pt}"
+CKPT="${CKPT:-${MODELS_ROOT}/Qwen2.5-VL-GR00T-LIBERO-4in1/checkpoints/steps_30000_pytorch_model.pt}"
 
 TASK_SUITE="${1:-${TASK_SUITE:-libero_10}}"
 NUM_TRIALS="${2:-${NUM_TRIALS:-5}}"
@@ -41,7 +44,9 @@ if [[ "${REPLAN_INTERVAL}" -gt 0 ]]; then
 else
   REPLAN_LABEL="replan_full"
 fi
-VIDEO_OUT="${VIDEO_OUT:-${WORK_ROOT}/starvla-runs/eval_groot_${TASK_SUITE}_${TASK_LABEL}_${NUM_TRIALS}trials_${REPLAN_LABEL}}"
+MODEL_ROOT="${CKPT%%/checkpoints/*}"
+MODEL_LABEL="${MODEL_LABEL:-$(basename "${MODEL_ROOT}")}"
+VIDEO_OUT="${VIDEO_OUT:-${RUNS_ROOT}/${MODEL_LABEL}/${TASK_SUITE}_${TASK_LABEL}_${NUM_TRIALS}trials_${REPLAN_LABEL}}"
 
 if [[ ! -x "${LIBERO_PYTHON}" ]]; then
   echo "LIBERO Python not found: ${LIBERO_PYTHON}" >&2

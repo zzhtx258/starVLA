@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-STARVLA_DIR="${STARVLA_DIR:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+STARVLA_DIR="${STARVLA_DIR:-$(cd "$(dirname "$0")/../../../.." && pwd)}"
+STARVLA_RESULTS="${STARVLA_RESULTS:-${STARVLA_DIR}/playground/results}"
 LIBERO_HOME="${LIBERO_HOME:-}"
 LIBERO_PYTHON="${LIBERO_PYTHON:-python}"
-CKPT="${CKPT:-${STARVLA_DIR}/playground/Checkpoints/libero_example/checkpoints/steps_50000_pytorch_model.pt}"
+CKPT="${CKPT:-${STARVLA_RESULTS}/models/hub/Qwen2.5-VL-GR00T-LIBERO-4in1/checkpoints/steps_30000_pytorch_model.pt}"
 HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-6694}"
 TASK_SUITE_NAME="${TASK_SUITE_NAME:-libero_goal}"
@@ -26,7 +27,8 @@ export PYOPENGL_PLATFORM="${PYOPENGL_PLATFORM_VALUE}"
 
 FOLDER_NAME="$(echo "${CKPT}" | awk -F'/' '{print $(NF-2)"_"$(NF-1)"_"$NF}')"
 MODEL_ROOT="$(echo "${CKPT}" | awk -F'/checkpoints/' '{print $1}')"
-VIDEO_OUT_PATH="${MODEL_ROOT}/results/${TASK_SUITE_NAME}/${FOLDER_NAME}"
+MODEL_LABEL="${MODEL_LABEL:-$(basename "${MODEL_ROOT}")}"
+VIDEO_OUT_PATH="${VIDEO_OUT_PATH:-${STARVLA_RESULTS}/runs/${MODEL_LABEL}/${TASK_SUITE_NAME}/${FOLDER_NAME}}"
 
 "${LIBERO_PYTHON}" ./examples/simBenchmarks/LIBERO/eval_files/eval_libero.py \
   --args.pretrained-path "${CKPT}" \
