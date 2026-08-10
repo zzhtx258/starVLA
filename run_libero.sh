@@ -7,6 +7,7 @@ set -euo pipefail
 #   bash run_libero.sh                    # libero_10, 5 trials/task, 10 tasks
 #   bash run_libero.sh libero_goal 1 10   # suite, trials/task, max tasks
 #   TASK_IDS=8 NUM_TRIALS=50 bash run_libero.sh
+#   TASK_IDS=8 NUM_TRIALS=50 REPLAN_INTERVAL=4 bash run_libero.sh
 
 WORK_ROOT="${WORK_ROOT:-/group/ycyang/anupam}"
 STARVLA_DIR="${STARVLA_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
@@ -19,6 +20,7 @@ TASK_SUITE="${1:-${TASK_SUITE:-libero_10}}"
 NUM_TRIALS="${2:-${NUM_TRIALS:-5}}"
 MAX_TASKS="${3:-${MAX_TASKS:-10}}"
 TASK_IDS="${TASK_IDS:-}"
+REPLAN_INTERVAL="${REPLAN_INTERVAL:-0}"
 GPU_ID="${GPU_ID:-0}"
 HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-6694}"
@@ -28,7 +30,12 @@ if [[ -n "${TASK_IDS}" ]]; then
 else
   TASK_LABEL="${MAX_TASKS}tasks"
 fi
-VIDEO_OUT="${VIDEO_OUT:-${WORK_ROOT}/starvla-runs/eval_groot_${TASK_SUITE}_${TASK_LABEL}_${NUM_TRIALS}trials}"
+if [[ "${REPLAN_INTERVAL}" -gt 0 ]]; then
+  REPLAN_LABEL="replan${REPLAN_INTERVAL}"
+else
+  REPLAN_LABEL="replan_full"
+fi
+VIDEO_OUT="${VIDEO_OUT:-${WORK_ROOT}/starvla-runs/eval_groot_${TASK_SUITE}_${TASK_LABEL}_${NUM_TRIALS}trials_${REPLAN_LABEL}}"
 
 if [[ ! -x "${LIBERO_PYTHON}" ]]; then
   echo "LIBERO Python not found: ${LIBERO_PYTHON}" >&2
@@ -58,6 +65,7 @@ echo "  suite:       ${TASK_SUITE}"
 echo "  trials/task: ${NUM_TRIALS}"
 echo "  max tasks:   ${MAX_TASKS}"
 echo "  task IDs:    ${TASK_IDS:-all selected by max tasks}"
+echo "  replan:      ${REPLAN_INTERVAL} (0 means full action chunk)"
 echo "  server:      ${HOST}:${PORT}"
 echo "  videos:      ${VIDEO_OUT}"
 
@@ -70,6 +78,7 @@ CMD=(
   --args.task-suite-name "${TASK_SUITE}" \
   --args.num-trials-per-task "${NUM_TRIALS}" \
   --args.max-tasks "${MAX_TASKS}" \
+  --args.replan-interval "${REPLAN_INTERVAL}" \
   --args.unnorm-key "${UNNORM_KEY}" \
   --args.pretrained-path "${CKPT}" \
   --args.video-out-path "${VIDEO_OUT}"

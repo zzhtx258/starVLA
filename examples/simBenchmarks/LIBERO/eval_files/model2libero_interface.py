@@ -33,6 +33,7 @@ class ModelClient:
         horizon: int = 0,
         action_ensemble: bool = True,
         action_ensemble_horizon: Optional[int] = 3,
+        replan_interval: Optional[int] = None,
         use_ddim: bool = True,
         num_ddim_steps: int = 10,
         adaptive_ensemble_alpha: float = 0.1,
@@ -45,6 +46,12 @@ class ModelClient:
         meta = self.client.get_server_metadata()
         self.action_chunk_size = int(meta["action_chunk_size"])
         self._server_metadata = meta
+        self.replan_interval = self.action_chunk_size if replan_interval is None else int(replan_interval)
+        if not 1 <= self.replan_interval <= self.action_chunk_size:
+            raise ValueError(
+                f"replan_interval must be between 1 and action_chunk_size "
+                f"({self.action_chunk_size}), got {self.replan_interval}"
+            )
 
         self.image_size: tuple = tuple(image_size)
         self.policy_setup = policy_setup
@@ -52,6 +59,7 @@ class ModelClient:
         print(
             f"*** policy_setup: {policy_setup}, unnorm_key: {unnorm_key}, "
             f"action_chunk_size: {self.action_chunk_size}, "
+            f"replan_interval: {self.replan_interval}, "
             f"server_meta: {meta} ***"
         )
 
@@ -127,8 +135,11 @@ class ModelClient:
                 resized.append(arr)
             example = {**example, "image": resized}
 
-        # Refresh chunk if needed.
-        if step % self.action_chunk_size == 0 or self.raw_actions is None:
+        # Refresh the predicted chunk at the requested receding-horizon
+        # interval. The model may predict (for example) 8 actions while the
+        # controller executes only the first 4 before observing and replanning.
+        chunk_offset = step % self.replan_interval
+        if chunk_offset == 0 or self.raw_actions is None:
             vla_input = {
                 "examples": [example],
                 "unnorm_key": self.unnorm_key,
@@ -156,7 +167,7 @@ class ModelClient:
                 )
             self.raw_actions = np.asarray(actions_batch)[0]  # (T, D)
 
-        raw_actions = self.raw_actions[step % self.action_chunk_size][None]
+        raw_actions = self.raw_actions[chunk_offset][None]
         raw_action = {
             "world_vector": np.array(raw_actions[0, :3]),
             "rotation_delta": np.array(raw_actions[0, 3:6]),
