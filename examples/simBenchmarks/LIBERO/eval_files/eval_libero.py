@@ -41,6 +41,7 @@ class Args:
     num_steps_wait: int = 10  # Number of steps to wait for objects to stabilize i n sim
     num_trials_per_task: int = 50  # Number of rollouts per task
     max_tasks: int = -1  # If > 0, limit the number of tasks evaluated (smoke / quick check). -1 = run all.
+    task_ids: str = ""  # Optional comma-separated task IDs, e.g. "8" or "2,8". Overrides max_tasks.
 
     #################################################################################################################
     # Utils
@@ -94,13 +95,32 @@ def eval_libero(args: Args) -> None:
         unnorm_key=args.unnorm_key,
     )
 
-    # Optional smoke-test cap (still useful for quick verification with -1 = full run).
-    n_eval_tasks = num_tasks_in_suite if args.max_tasks <= 0 else min(args.max_tasks, num_tasks_in_suite)
-    logging.info(f"Evaluating {n_eval_tasks} of {num_tasks_in_suite} tasks (max_tasks={args.max_tasks})")
+    # Select explicit task IDs when requested; otherwise evaluate the first
+    # `max_tasks` tasks (or the whole suite when max_tasks <= 0).
+    if args.task_ids.strip():
+        try:
+            task_ids = [int(value.strip()) for value in args.task_ids.split(",") if value.strip()]
+        except ValueError as exc:
+            raise ValueError(f"Invalid --args.task-ids value: {args.task_ids!r}") from exc
+        if not task_ids:
+            raise ValueError("--args.task-ids did not contain any task IDs")
+        invalid_ids = [task_id for task_id in task_ids if not 0 <= task_id < num_tasks_in_suite]
+        if invalid_ids:
+            raise ValueError(
+                f"Task IDs out of range for {args.task_suite_name}: {invalid_ids}; "
+                f"valid range is 0..{num_tasks_in_suite - 1}"
+            )
+        # Preserve user order while avoiding accidental duplicate evaluation.
+        task_ids = list(dict.fromkeys(task_ids))
+        logging.info(f"Evaluating explicit task IDs {task_ids} of {num_tasks_in_suite} tasks")
+    else:
+        n_eval_tasks = num_tasks_in_suite if args.max_tasks <= 0 else min(args.max_tasks, num_tasks_in_suite)
+        task_ids = list(range(n_eval_tasks))
+        logging.info(f"Evaluating {n_eval_tasks} of {num_tasks_in_suite} tasks (max_tasks={args.max_tasks})")
 
     # Start evaluation
     total_episodes, total_successes = 0, 0
-    for task_id in tqdm.tqdm(range(n_eval_tasks)):
+    for task_id in tqdm.tqdm(task_ids):
         # Get task
         task = task_suite.get_task(task_id)
 

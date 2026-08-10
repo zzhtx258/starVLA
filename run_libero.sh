@@ -6,6 +6,7 @@ set -euo pipefail
 # Usage:
 #   bash run_libero.sh                    # libero_10, 5 trials/task, 10 tasks
 #   bash run_libero.sh libero_goal 1 10   # suite, trials/task, max tasks
+#   TASK_IDS=8 NUM_TRIALS=50 bash run_libero.sh
 
 WORK_ROOT="${WORK_ROOT:-/group/ycyang/anupam}"
 STARVLA_DIR="${STARVLA_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
@@ -17,11 +18,17 @@ CKPT="${CKPT:-${WORK_ROOT}/starvla-models/Qwen2.5-VL-GR00T-LIBERO-4in1/checkpoin
 TASK_SUITE="${1:-${TASK_SUITE:-libero_10}}"
 NUM_TRIALS="${2:-${NUM_TRIALS:-5}}"
 MAX_TASKS="${3:-${MAX_TASKS:-10}}"
+TASK_IDS="${TASK_IDS:-}"
 GPU_ID="${GPU_ID:-0}"
 HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-6694}"
 UNNORM_KEY="${UNNORM_KEY:-franka}"
-VIDEO_OUT="${VIDEO_OUT:-${WORK_ROOT}/starvla-runs/eval_groot_${TASK_SUITE}_${MAX_TASKS}x${NUM_TRIALS}}"
+if [[ -n "${TASK_IDS}" ]]; then
+  TASK_LABEL="task${TASK_IDS//,/-}"
+else
+  TASK_LABEL="${MAX_TASKS}tasks"
+fi
+VIDEO_OUT="${VIDEO_OUT:-${WORK_ROOT}/starvla-runs/eval_groot_${TASK_SUITE}_${TASK_LABEL}_${NUM_TRIALS}trials}"
 
 if [[ ! -x "${LIBERO_PYTHON}" ]]; then
   echo "LIBERO Python not found: ${LIBERO_PYTHON}" >&2
@@ -50,11 +57,13 @@ echo "Starting LIBERO evaluation"
 echo "  suite:       ${TASK_SUITE}"
 echo "  trials/task: ${NUM_TRIALS}"
 echo "  max tasks:   ${MAX_TASKS}"
+echo "  task IDs:    ${TASK_IDS:-all selected by max tasks}"
 echo "  server:      ${HOST}:${PORT}"
 echo "  videos:      ${VIDEO_OUT}"
 
 cd "${STARVLA_DIR}"
-exec "${LIBERO_PYTHON}" \
+CMD=(
+  "${LIBERO_PYTHON}"
   examples/simBenchmarks/LIBERO/eval_files/eval_libero.py \
   --args.host "${HOST}" \
   --args.port "${PORT}" \
@@ -64,3 +73,10 @@ exec "${LIBERO_PYTHON}" \
   --args.unnorm-key "${UNNORM_KEY}" \
   --args.pretrained-path "${CKPT}" \
   --args.video-out-path "${VIDEO_OUT}"
+)
+
+if [[ -n "${TASK_IDS}" ]]; then
+  CMD+=(--args.task-ids "${TASK_IDS}")
+fi
+
+exec "${CMD[@]}"
