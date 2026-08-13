@@ -26,6 +26,7 @@ MAX_TASKS="${3:-${MAX_TASKS:-10}}"
 TASK_IDS="${TASK_IDS:-}"
 REPLAN_INTERVAL="${REPLAN_INTERVAL:-0}"
 ACTION_ENSEMBLE="${ACTION_ENSEMBLE:-0}"
+IMAGE_VIEWS="${IMAGE_VIEWS:-primary,wrist}"
 GPU_ID="${GPU_ID:-0}"
 HOST="${HOST:-127.0.0.1}"
 PORT="${PORT:-6694}"
@@ -78,6 +79,7 @@ echo "  max tasks:   ${MAX_TASKS}"
 echo "  task IDs:    ${TASK_IDS:-all selected by max tasks}"
 echo "  replan:      ${REPLAN_INTERVAL} (0 means full action chunk)"
 echo "  ensemble:    ${ACTION_ENSEMBLE} (0 = direct replacement, 1 = blend overlapping chunks)"
+echo "  image views: ${IMAGE_VIEWS} (ordered, e.g. primary or primary,wrist)"
 echo "  server:      ${HOST}:${PORT}"
 echo "  videos:      ${VIDEO_OUT}"
 
@@ -92,6 +94,7 @@ CMD=(
   --args.max-tasks "${MAX_TASKS}" \
   --args.replan-interval "${REPLAN_INTERVAL}" \
   --args.action-ensemble "${ACTION_ENSEMBLE}" \
+  --args.image-views "${IMAGE_VIEWS}" \
   --args.unnorm-key "${UNNORM_KEY}" \
   --args.pretrained-path "${CKPT}" \
   --args.video-out-path "${VIDEO_OUT}"

@@ -44,6 +44,7 @@ class Args:
     task_ids: str = ""  # Optional comma-separated task IDs, e.g. "8" or "2,8". Overrides max_tasks.
     replan_interval: int = 0  # Actions executed before replanning. 0 = use the model's full action chunk.
     action_ensemble: int = 0  # 0 = direct chunk replacement, 1 = blend overlapping predictions.
+    image_views: str = "primary,wrist"  # Ordered views sent to the policy: primary, wrist, or both.
 
     #################################################################################################################
     # Utils
@@ -64,6 +65,17 @@ class Args:
 
 def eval_libero(args: Args) -> None:
     logging.info(f"Arguments: {json.dumps(dataclasses.asdict(args), indent=4)}")
+
+    image_views = [view.strip() for view in args.image_views.split(",") if view.strip()]
+    valid_image_views = {"primary", "wrist"}
+    if not image_views or any(view not in valid_image_views for view in image_views):
+        raise ValueError(
+            f"Invalid --args.image-views={args.image_views!r}; choose an ordered comma-separated "
+            "subset of: primary,wrist"
+        )
+    if len(image_views) != len(set(image_views)):
+        raise ValueError(f"Duplicate entries in --args.image-views={args.image_views!r}")
+    logging.info("Policy image views (ordered): %s", image_views)
 
     # Set random seed
     np.random.seed(args.seed)
@@ -187,9 +199,12 @@ def eval_libero(args: Args) -> None:
                     "instruction": [str(task_description)],
                 }
 
-                # align key with model API --> two images provided here --> check training
+                view_images = {
+                    "primary": observation["observation.primary"][0],
+                    "wrist": observation["observation.wrist_image"][0],
+                }
                 example_dict = {
-                    "image": [observation["observation.primary"][0], observation["observation.wrist_image"][0]],
+                    "image": [view_images[view] for view in image_views],
                     "lang": observation["instruction"][0],
                 }
 
